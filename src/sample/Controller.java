@@ -6,8 +6,10 @@ import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
+import sun.reflect.annotation.ExceptionProxy;
 
 import java.sql.*;
+import java.util.ArrayList;
 
 public class Controller
 {
@@ -16,7 +18,9 @@ public class Controller
     private Statement stat;
     private ResultSet result;
 
-    ObservableList<String> tableList = FXCollections.observableArrayList("Instrumenty Smyczkowe", "Instrumenty dete", "Sprzet naglosnieniowy", "Akcesoria");
+    ArrayList<String> tablesListFromDB;
+
+    ObservableList<String> tableList; //= FXCollections.observableArrayList("Instrumenty Smyczkowe", "Instrumenty dete", "Sprzet naglosnieniowy", "Akcesoria");
 
     @FXML
     private ComboBox tableListBox;
@@ -24,23 +28,25 @@ public class Controller
     @FXML
     private ListView returnFromDBListView;
 
+
+    //connecting to database
     public Controller()
     {
         returnFromDBListView = new ListView<>();
+        tablesListFromDB = new ArrayList<String>();
 
         try
         {
             Class.forName("com.mysql.jdbc.Driver");
 
-            conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/macias", "root", "");
+            conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/warehouse", "root", "");
             stat = conn.createStatement();
 
-            System.out.println("Connected to database!");
+            System.out.println("----------Connected to database!----------");
         }
         catch(Exception ex)
         {
-            System.out.println("Error: "+ ex);
-            System.out.println("Cannot connect to database!");
+            System.out.println("----------Cannot connect to database!----------\n"+"Error: "+ ex);
         }
     }
 
@@ -61,16 +67,75 @@ public class Controller
         }
         catch(Exception ex)
         {
-            System.out.println("Error: "+ ex);
-            System.out.println("Cannot get data from database!");
+            System.out.println("Cannot get data from database! \n" + "Error: "+ ex);
+            System.out.println();
         }
     }
-    @FXML
+
+    private void getTableList()
+    {
+        try
+        {
+            // SELECT table_name FROM information_schema.tables where table_schema='<your_database_name>';
+
+            tablesListFromDB.clear();
+
+            String query = "SELECT table_name FROM information_schema.tables where table_schema='warehouse'";
+            ResultSet tableListFromDB = stat.executeQuery(query);
+
+            System.out.println("----------Data from database:----------");
+            while(tableListFromDB.next())
+            {
+                String tableName = tableListFromDB.getString("table_name");
+                System.out.println("Table: " + tableName);
+                tablesListFromDB.add(tableName);
+                tableList = FXCollections.observableArrayList(tablesListFromDB);
+            }
+        }
+        catch(Exception ex)
+        {
+            System.out.println("Cannot get table list data from database! \n" + "Error: "+ ex);
+            System.out.println();
+        }
+        System.out.println("----------DONE----------");
+    }
+    @FXML //Getting information what tables we have in our database in every click and adding them to combo box
     private void AddValuesToCB()
     {
+        tableListBox.valueProperty().set(null);
+        getTableList();
         tableListBox.setItems(tableList);
     }
 
+    @FXML
+    private void getDataFromDatabase() //more universal void for getting info about eq, saved ~130lines of code
+    {
+        returnFromDBListView.getItems().clear();
+
+        try
+        {
+            String query = "select * from " + tableListBox.getValue();
+            result = stat.executeQuery(query);
+            System.out.println("Data from database:");
+            while(result.next())
+            {
+                Integer id = result.getInt("id");
+                String name = result.getString("name");
+                Integer amount = result.getInt("amount");
+                System.out.println("ID Instrumentu: " + id + " " + "Nazwa instrumentu: " + name + " Ilosc instrumentow: " + amount);
+
+                returnFromDBListView.getItems().addAll("ID Instrumentu: " + id + "\t\t Nazwa instrumentu: " + name + "\t\t Ilosc instrumentow: " + amount);
+                returnFromDBListView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.out.println("Cannot get data from database! \n" + "Error: " + ex);
+        }
+    }
+
+
+    /*
     @FXML
     private void getDataFromDatabase()
     {
@@ -172,9 +237,37 @@ public class Controller
                 System.out.println("Cannot get data from database!");
             }
         }
-        else if (tableListBox.getValue().equals(null))
+        //universal I~M working on it
+        else if (tableListBox.getValue().equals("Akcesoria"))
+        {
+            try
+            {
+                String query = "select * from akcesoria";
+                result = stat.executeQuery(query);
+                System.out.println("Data from database:");
+                while(result.next())
+                {
+                    String ID = result.getString("idAkcesria");
+                    String name = result.getString("NazwaAkcesoria");
+                    Integer amount = result.getInt("Ilosc");
+                    System.out.println("ID Akcesoria: " + ID + " " + "Nazwa akcesoria: " + name + " Ilosc: " + amount);
+
+                    returnFromDBListView.getItems().addAll("ID Instrumentu: " + ID + " " + "Nazwa instrumentu: " + name + " Ilosc instrumentow: " + amount);
+                    returnFromDBListView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+                }
+            }
+            catch(Exception ex)
+            {
+                System.out.println("Error: "+ ex);
+                System.out.println("Cannot get data from database!");
+            }
+        }
+
+
+        else
         {
             System.out.println("Musisz wybrac kategorie z listy!");
         }
     }
+    */
 }
