@@ -6,7 +6,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
-import sun.reflect.annotation.ExceptionProxy;
+import javafx.scene.control.TextField;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -14,9 +14,13 @@ import java.util.ArrayList;
 public class Controller
 {
 
-    private Connection conn;
-    private Statement stat;
+    private Connection connection;
+    private Statement statement;
     private ResultSet result;
+
+    private String nameToAddToTable;
+    private Integer amountToAddToTable;
+
 
     ArrayList<String> tablesListFromDB;
 
@@ -28,6 +32,14 @@ public class Controller
     @FXML
     private ListView returnFromDBListView;
 
+    @FXML
+    private TextField nameFromTextBox;
+
+    @FXML
+    private TextField amountFromTextBox;
+
+    @FXML
+    private TextField idToDrop;
 
     //connecting to database
     public Controller()
@@ -39,8 +51,8 @@ public class Controller
         {
             Class.forName("com.mysql.jdbc.Driver");
 
-            conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/warehouse", "root", "");
-            stat = conn.createStatement();
+            connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/warehouse", "root", ""); //username and password should be changed for more security!!!
+            statement = connection.createStatement();
 
             System.out.println("----------Connected to database!----------");
         }
@@ -50,13 +62,15 @@ public class Controller
         }
     }
 
+
+    //some test void for getting info about eq list in table DEPRECATED
     @FXML
     private void getData()
     {
         try
         {
             String query = "select * from testtable";
-            result = stat.executeQuery(query);
+            result = statement.executeQuery(query);
             System.out.println("Data from database:");
             while(result.next())
             {
@@ -72,6 +86,7 @@ public class Controller
         }
     }
 
+    //taking list of all tables from database
     private void getTableList()
     {
         try
@@ -81,7 +96,7 @@ public class Controller
             tablesListFromDB.clear();
             
             String query = "SELECT table_name FROM information_schema.tables where table_schema='warehouse'";
-            ResultSet tableListFromDB = stat.executeQuery(query);
+            ResultSet tableListFromDB = statement.executeQuery(query);
 
             System.out.println("----------Data from database:----------");
             while(tableListFromDB.next())
@@ -115,7 +130,7 @@ public class Controller
         try
         {
             String query = "select * from " + tableListBox.getValue();
-            result = stat.executeQuery(query);
+            result = statement.executeQuery(query);
             System.out.println("Data from database:");
             while(result.next())
             {
@@ -124,7 +139,7 @@ public class Controller
                 Integer amount = result.getInt("amount");
                 System.out.println("ID Instrumentu: " + id + " " + "Nazwa instrumentu: " + name + " Ilosc instrumentow: " + amount);
 
-                returnFromDBListView.getItems().addAll("ID Instrumentu: " + id + "\t\t Nazwa instrumentu: " + name + "\t\t Ilosc instrumentow: " + amount);
+                returnFromDBListView.getItems().addAll("ID: " + id + "\t\t Nazwa: " + name + "\t\t Ilosc: " + amount);
                 returnFromDBListView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
             }
         }
@@ -132,6 +147,67 @@ public class Controller
         {
             System.out.println("Cannot get data from database! \n" + "Error: " + ex);
         }
+    }
+
+
+    @FXML
+    private void insertValuesIntoDB()
+    {
+        // INSERT INTO `instrumenty_dete` (`id`, `name`, `amount`) VALUES (NULL, 'klarnet', '1');
+        // INSERT INTO `instrumenty_dete` (`name`, `amount`) VALUES ('cokolwiek', '10')
+
+        getValuesFromTextBoxes();
+
+        String query = "INSERT INTO " + tableListBox.getValue()
+                + " (name, amount) VALUES ('"
+                + nameToAddToTable + "',"
+                + amountToAddToTable + " );";
+
+        try
+        {
+            statement.executeUpdate(query);
+            System.out.println("Added values to table");
+        }
+        catch (Exception ex)
+        {
+            System.out.println("Error with adding values to table: \n" + ex);
+        }
+        nameFromTextBox.setText(null);
+        amountFromTextBox.setText(null);
+        getDataFromDatabase();
+
+    }
+
+    private void getValuesFromTextBoxes()
+    {
+        nameToAddToTable = nameFromTextBox.getText();
+        if(Integer.parseInt(amountFromTextBox.getText())>=0 && amountFromTextBox != null)
+        {
+            amountToAddToTable = Integer.parseInt(amountFromTextBox.getText());
+        }
+        else System.out.println("Amount must be equal or greater then zero.");
+    }
+
+    @FXML
+    private  void dropLineFromTable()
+    {
+        Integer id = Integer.parseInt(idToDrop.getText());
+
+        try
+        {
+            // DELETE FROM `akcesoria` WHERE `akcesoria`.`id` = 3;
+            String query = "DELETE FROM " + tableListBox.getValue()
+                    + " WHERE " + tableListBox.getValue() + ".id =" + id;
+            System.out.println(query);
+            statement.executeUpdate(query);
+            System.out.println("Deleted line with id:" + id);
+        }
+        catch (Exception ex)
+        {
+            System.out.println("Deleting error" + ex);
+        }
+        idToDrop.setText(null);
+        getDataFromDatabase();
     }
 
 
@@ -146,7 +222,7 @@ public class Controller
             try
             {
                 String query = "select * from instrumenty_smyczkowe";
-                result = stat.executeQuery(query);
+                result = statement.executeQuery(query);
                 System.out.println("Data from database:");
                 while(result.next())
                 {
@@ -170,7 +246,7 @@ public class Controller
             try
             {
                 String query = "select * from instrumenty_dete";
-                result = stat.executeQuery(query);
+                result = statement.executeQuery(query);
                 System.out.println("Data from database:");
                 while(result.next())
                 {
@@ -194,7 +270,7 @@ public class Controller
             try
             {
                 String query = "select * from sprzet_naglosnieniowy";
-                result = stat.executeQuery(query);
+                result = statement.executeQuery(query);
                 System.out.println("Data from database:");
                 while(result.next())
                 {
@@ -218,7 +294,7 @@ public class Controller
             try
             {
                 String query = "select * from akcesoria";
-                result = stat.executeQuery(query);
+                result = statement.executeQuery(query);
                 System.out.println("Data from database:");
                 while(result.next())
                 {
@@ -243,7 +319,7 @@ public class Controller
             try
             {
                 String query = "select * from akcesoria";
-                result = stat.executeQuery(query);
+                result = statement.executeQuery(query);
                 System.out.println("Data from database:");
                 while(result.next())
                 {

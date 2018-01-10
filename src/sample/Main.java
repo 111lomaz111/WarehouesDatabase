@@ -8,6 +8,13 @@ import javafx.stage.Stage;
 
 public class Main extends Application {
 
+    /*
+    TODO
+    -Dodawanie produktu do bazy, //done
+    -I jesli się da to obrazek produktu(ale to jakiś szczególnie konieczny element nie jest)
+    */
+
+
     @Override
     public void start(Stage primaryStage) throws Exception{
         Parent root = FXMLLoader.load(getClass().getResource("UI.fxml"));
