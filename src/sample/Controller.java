@@ -79,7 +79,7 @@ public class Controller
             // SELECT table_name FROM information_schema.tables where table_schema='<your_database_name>';
 
             tablesListFromDB.clear();
-
+            
             String query = "SELECT table_name FROM information_schema.tables where table_schema='warehouse'";
             ResultSet tableListFromDB = stat.executeQuery(query);
 
