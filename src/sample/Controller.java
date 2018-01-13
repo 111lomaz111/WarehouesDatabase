@@ -1,7 +1,5 @@
 package sample;
 
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -12,7 +10,10 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -21,9 +22,8 @@ public class Controller
 
     private Connection connection;
     private Statement statement;
-    private ResultSet result;
 
-    private String nameToAddToTable;
+    private String nameToAddToTable, linkToAddToTable;
     private Integer amountToAddToTable, selectedItemID;
 
     private Image itemImage;
@@ -34,21 +34,22 @@ public class Controller
 
     @FXML
     private ComboBox tableListBox;
-
     @FXML
     private ListView<String> returnFromDBListView;
-
     @FXML
     private TextField nameFromTextBox;
-
     @FXML
     private TextField amountFromTextBox;
-
     @FXML
-    private TextField idToDrop;
-
+    private TextField linkFromTextBox;
     @FXML
     private ImageView itemIconImageView;
+    @FXML
+    private TextField changeNameTextBox;
+    @FXML
+    private TextField changeAmountTextBox;
+    @FXML
+    private TextField changeImageLinkTextBox;
 
 
     public Controller()
@@ -89,7 +90,7 @@ public class Controller
         try
         {
             String query = "SELECT imageLink from " + tableListBox.getValue() + " WHERE id =" + selectedItemID;
-            result = statement.executeQuery(query);
+            ResultSet result = statement.executeQuery(query);
 
             while(result.next())
             {
@@ -118,7 +119,7 @@ public class Controller
         try
         {
             String query = "select * from testtable";
-            result = statement.executeQuery(query);
+            ResultSet result = statement.executeQuery(query);
             System.out.println("Data from database:");
             while(result.next())
             {
@@ -180,7 +181,7 @@ public class Controller
         {
             String query = "select * from " + tableListBox.getValue();
 
-            result = statement.executeQuery(query);
+            ResultSet result = statement.executeQuery(query);
 
             System.out.println("Data from database:");
             while(result.next())
@@ -210,9 +211,10 @@ public class Controller
         getValuesFromTextBoxes();
 
         String query = "INSERT INTO " + tableListBox.getValue()
-                + " (name, amount) VALUES ('"
+                + " (name, amount, imageLink) VALUES ('"
                 + nameToAddToTable + "',"
-                + amountToAddToTable + " );";
+                + amountToAddToTable + ",'"
+                + linkToAddToTable + " ');";
 
         try
         {
@@ -225,6 +227,7 @@ public class Controller
         }
         nameFromTextBox.setText(null);
         amountFromTextBox.setText(null);
+        linkFromTextBox.setText(null);
         getDataFromDatabase();
 
     }
@@ -232,6 +235,7 @@ public class Controller
     private void getValuesFromTextBoxes()
     {
         nameToAddToTable = nameFromTextBox.getText();
+        linkToAddToTable = linkFromTextBox.getText();
         if(Integer.parseInt(amountFromTextBox.getText())>=0 && amountFromTextBox != null)
         {
             amountToAddToTable = Integer.parseInt(amountFromTextBox.getText());
@@ -252,26 +256,69 @@ public class Controller
         System.out.println("Id from scanner: " + selectedItemID);
 
         showItemImageFromDatabase();
+        getTextForTextBoxForUpdate();
+    }
+
+    private void getTextForTextBoxForUpdate()
+    {
+        // SELECT * FROM `akcesoria` WHERE `id` = 2
+        try
+        {
+            String query = "SELECT * FROM " + tableListBox.getValue() + " WHERE id = " + selectedItemID;
+            statement.execute(query);
+
+            ResultSet result = statement.executeQuery(query);
+            while(result.next())
+            {
+                changeNameTextBox.setText(result.getString("name"));
+                changeAmountTextBox.setText(result.getString("amount"));
+                changeImageLinkTextBox.setText(result.getString("imageLink"));
+            }
+
+        }
+        catch (Exception ex)
+        {
+            System.out.println("Error" + ex);
+        }
+    }
+
+    @FXML
+    private void updateValuesInDB()
+    {
+        try
+        {
+            // UPDATE `akcesoria` SET `name` = 'Akcesoria8', `amount` = '7', `imageLink` = 'localhost' WHERE `akcesoria`.`id` = 2;
+            String query = "UPDATE " + tableListBox.getValue() + " SET " +
+                    "name = '" + changeNameTextBox.getText() + "', " +
+                    "amount = " + Integer.parseInt(changeAmountTextBox.getText()) + ", " +
+                    "imageLink = '" + changeImageLinkTextBox.getText() + "' WHERE " +
+                    tableListBox.getValue() + ".id = " + selectedItemID;
+
+            statement.executeUpdate(query);
+        }
+        catch (Exception ex)
+        {
+            System.out.println("Cannot update: " + ex);
+        }
+        getDataFromDatabase();
     }
 
     @FXML
     private  void dropLineFromTable()
     {
-        Integer id = Integer.parseInt(idToDrop.getText());
-
+        getItemID();
         try
         {
             // DELETE FROM `akcesoria` WHERE `akcesoria`.`id` = 3;
             String query = "DELETE FROM " + tableListBox.getValue() + " WHERE " + tableListBox.getValue() + ".id =" + selectedItemID;
             System.out.println(query);
             statement.executeUpdate(query);
-            System.out.println("Deleted line with id:" + id);
+            System.out.println("Deleted line with id:" + selectedItemID);
         }
         catch (Exception ex)
         {
             System.out.println("Deleting error" + ex);
         }
-        idToDrop.setText(null);
         getDataFromDatabase();
     }
 
