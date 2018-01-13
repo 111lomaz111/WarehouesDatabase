@@ -1,5 +1,7 @@
 package sample;
 
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -7,9 +9,12 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 public class Controller
 {
@@ -19,18 +24,19 @@ public class Controller
     private ResultSet result;
 
     private String nameToAddToTable;
-    private Integer amountToAddToTable;
+    private Integer amountToAddToTable, selectedItemID;
 
+    private Image itemImage;
 
-    ArrayList<String> tablesListFromDB;
+    private ArrayList<String> tablesListFromDB;
 
-    ObservableList<String> tableList; //= FXCollections.observableArrayList("Instrumenty Smyczkowe", "Instrumenty dete", "Sprzet naglosnieniowy", "Akcesoria");
+    private ObservableList<String> tableList; //= FXCollections.observableArrayList("Instrumenty Smyczkowe", "Instrumenty dete", "Sprzet naglosnieniowy", "Akcesoria");
 
     @FXML
     private ComboBox tableListBox;
 
     @FXML
-    private ListView returnFromDBListView;
+    private ListView<String> returnFromDBListView;
 
     @FXML
     private TextField nameFromTextBox;
@@ -41,12 +47,28 @@ public class Controller
     @FXML
     private TextField idToDrop;
 
-    //connecting to database
+    @FXML
+    private ImageView itemIconImageView;
+
+
     public Controller()
+    {
+        init();
+    }
+
+    // initiating  all void`s and vars needed on start
+    private void init()
     {
         returnFromDBListView = new ListView<>();
         tablesListFromDB = new ArrayList<String>();
+        itemIconImageView = new ImageView();
 
+        connectToDB();
+    }
+
+    //connecting to database
+    private void connectToDB()
+    {
         try
         {
             Class.forName("com.mysql.jdbc.Driver");
@@ -58,12 +80,38 @@ public class Controller
         }
         catch(Exception ex)
         {
-            System.out.println("----------Cannot connect to database!----------\n"+"Error: "+ ex);
+            System.out.println("----------Cannot connect to database!----------\n" + "Error: "+ ex);
         }
     }
 
+    private void showItemImageFromDatabase()
+    {
+        try
+        {
+            String query = "SELECT imageLink from " + tableListBox.getValue() + " WHERE id =" + selectedItemID;
+            result = statement.executeQuery(query);
 
-    //some test void for getting info about eq list in table DEPRECATED
+            while(result.next())
+            {
+                String imageLinkGetString = result.getString("imageLink");
+
+                if(imageLinkGetString == "")
+                {
+                    itemImage = new Image("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSqtb2g_qz-yqS6wtxd0L__o_VmkwH7t-XHTNBSwOXPcc6JIVD2"); //"NO IMAGE" if in DB there`s are not any image link
+                }
+                else itemImage = new Image(imageLinkGetString);
+                itemIconImageView.setImage(itemImage);
+
+                System.out.println("Image is set!");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.out.println("Error with getting image from DB:" + ex);
+        }
+
+    }
+    //some test void for getting info about eq list in table !DEPRECATED!
     @FXML
     private void getData()
     {
@@ -85,6 +133,7 @@ public class Controller
             System.out.println();
         }
     }
+
 
     //taking list of all tables from database
     private void getTableList()
@@ -110,7 +159,6 @@ public class Controller
         catch(Exception ex)
         {
             System.out.println("Cannot get table list data from database! \n" + "Error: "+ ex);
-            System.out.println();
         }
         System.out.println("----------DONE----------");
     }
@@ -126,18 +174,22 @@ public class Controller
     private void getDataFromDatabase() //more universal void for getting info about eq, saved ~130lines of code
     {
         returnFromDBListView.getItems().clear();
+        itemIconImageView.setImage(null);
 
         try
         {
             String query = "select * from " + tableListBox.getValue();
+
             result = statement.executeQuery(query);
+
             System.out.println("Data from database:");
             while(result.next())
             {
                 Integer id = result.getInt("id");
                 String name = result.getString("name");
                 Integer amount = result.getInt("amount");
-                System.out.println("ID Instrumentu: " + id + " " + "Nazwa instrumentu: " + name + " Ilosc instrumentow: " + amount);
+
+                System.out.println("ID Instrumentu: " + id + " Nazwa instrumentu: " + name + " Ilosc instrumentow: " + amount);
 
                 returnFromDBListView.getItems().addAll("ID: " + id + "\t\t Nazwa: " + name + "\t\t Ilosc: " + amount);
                 returnFromDBListView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
@@ -154,7 +206,6 @@ public class Controller
     private void insertValuesIntoDB()
     {
         // INSERT INTO `instrumenty_dete` (`id`, `name`, `amount`) VALUES (NULL, 'klarnet', '1');
-        // INSERT INTO `instrumenty_dete` (`name`, `amount`) VALUES ('cokolwiek', '10')
 
         getValuesFromTextBoxes();
 
@@ -189,6 +240,21 @@ public class Controller
     }
 
     @FXML
+    private void  getItemID ()
+    {
+        String searchForItemID = returnFromDBListView.getSelectionModel().getSelectedItem().toString();
+
+        Scanner findID = new Scanner(searchForItemID);
+        findID.skip("ID:");
+
+        selectedItemID  = findID.nextInt();
+
+        System.out.println("Id from scanner: " + selectedItemID);
+
+        showItemImageFromDatabase();
+    }
+
+    @FXML
     private  void dropLineFromTable()
     {
         Integer id = Integer.parseInt(idToDrop.getText());
@@ -196,8 +262,7 @@ public class Controller
         try
         {
             // DELETE FROM `akcesoria` WHERE `akcesoria`.`id` = 3;
-            String query = "DELETE FROM " + tableListBox.getValue()
-                    + " WHERE " + tableListBox.getValue() + ".id =" + id;
+            String query = "DELETE FROM " + tableListBox.getValue() + " WHERE " + tableListBox.getValue() + ".id =" + selectedItemID;
             System.out.println(query);
             statement.executeUpdate(query);
             System.out.println("Deleted line with id:" + id);
@@ -211,7 +276,7 @@ public class Controller
     }
 
 
-    /*
+    /* !DEPRECATED!
     @FXML
     private void getDataFromDatabase()
     {

@@ -5,13 +5,14 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.121" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.Controller">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8.0.121" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.Controller">
    <children>
       <Button id="bttGetValues" layoutX="200.0" layoutY="25.0" mnemonicParsing="false" onMouseClicked="#getDataFromDatabase" text="Pobierz informacje" textAlignment="CENTER" />
       <ComboBox id="comboBoxList" fx:id="tableListBox" layoutX="25.0" layoutY="25.0" onMouseClicked="#AddValuesToCB" prefWidth="175.0" promptText="Wybierz liste" />
-      <ListView fx:id="returnFromDBListView" layoutX="25.0" layoutY="75.0" minHeight="-Infinity" minWidth="-Infinity" onContextMenuRequested="#dropLineFromTable" prefHeight="200.0" prefWidth="550.0" />
+      <ListView fx:id="returnFromDBListView" layoutX="25.0" layoutY="75.0" minHeight="-Infinity" minWidth="-Infinity" onMouseClicked="#getItemID" prefHeight="200.0" prefWidth="550.0" />
       <TextField fx:id="nameFromTextBox" layoutX="100.0" layoutY="297.0" promptText="do dodania" />
       <Label alignment="CENTER" layoutX="25.0" layoutY="300.0" text="Wpisz nazwę:" textAlignment="CENTER" />
       <TextField fx:id="amountFromTextBox" layoutX="325.0" layoutY="297.0" promptText="do dodania( &gt;=0 )" />
@@ -20,5 +21,6 @@
       <TextField fx:id="idToDrop" layoutX="100.0" layoutY="327.0" promptText="przedmiotu do usunięcia" />
       <Label layoutX="25.0" layoutY="331.0" text="Wpisz ID:" />
       <Button layoutX="475.0" layoutY="327.0" mnemonicParsing="false" onMouseClicked="#dropLineFromTable" prefHeight="25.0" prefWidth="98.0" text="Usuń z tabeli" />
+      <ImageView fx:id="itemIconImageView" fitHeight="200.0" fitWidth="200.0" layoutX="586.0" layoutY="75.0" pickOnBounds="true" preserveRatio="true" />
    </children>
 </AnchorPane>
